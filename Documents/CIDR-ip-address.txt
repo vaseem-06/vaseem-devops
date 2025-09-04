@@ -1,0 +1,25 @@
+Virginia VPC      10.1.0.0/16
+Public subnet    10.1.2.0/24
+Private subnet   10.1.1.0/24
+
+
+Ohio VPC            10.2.0.0/16
+Public subnet    10.2.1.0/24
+Private subnet   10.2.2.0/24
+
+
+
+Oregon VPC        10.3.0.0/16
+Public subnet     10.3.1.0/24
+Private subnet    10.3.2.0/24
+
+
+Mumbai VPC      10.4.0.0/16
+Public subnet     10.4.1.0/24
+Private subnet    10.4.2.0/24
+
+
+	 
+CIDR’s for 4 Region’s
+
+

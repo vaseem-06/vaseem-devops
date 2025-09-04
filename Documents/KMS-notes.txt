@@ -1,0 +1,25 @@
+﻿create a kms key in aws account 
+create a password file in bash
+
+1. Generate a KMS Data Key (DEK)
+a. aws kms generate-data-key --key-id alias/vaseem-key --key-spec AES_256 --region ap-south-1
+
+2. Redirected the JSON to keys.txt for reuse:
+a. aws kms generate-data-key --key-id alias/ vaseem -key --key-spec AES_256 --region ap-south-1> keys.txt
+
+3. Create a binary file with the plaintext DEK
+a. echo "eOkC6TU1kBrOxgLY92d8fBprSY2ysRLfsh1/K4Yyhio=" | base64 --decode > vaseem -plain-key
+
+4. Create a binary file with the encrypted DEK with the cipher text (use normal double quotes "") 
+a. echo "copy the cipher text" | base64 --decode > vaseem -cipher-key
+
+5. You asked KMS to decrypt the stored encrypted DEK: (KMS returned the same Plaintext (base64) DEK you had originally.)
+a. aws kms decrypt --ciphertext-blob fileb://./ vaseem -cipher-key --region us-east-1
+
+6. Encrypt your secrets with OpenSSL (get unreadable binary)
+a. openssl enc -in ./passwords.txt -out ./imran-passwords-encrypted.txt -e -aes256 -k fileb://./ vaseem -plain-key
+
+7. Decrypt your file You used OpenSSL with the same parameters to get back the cleartext:
+a. openssl enc -in ./imran-passwords-encrypted.txt -out ./imran-passwords-decrypted.txt -d -aes256 -k fileb://./ vaseem -plain-key
+
+● vaseem -passwords-decrypted.txt matched your original passwords.txt ✅
