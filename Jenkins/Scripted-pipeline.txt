@@ -1,0 +1,72 @@
+node {
+    // Define Maven home once, usable in all stages
+    def mvnHome = tool name: 'MVN_HOME', type: 'maven'
+
+    stage('Checkout SCM') {
+        git branch: 'main',
+            url: 'https://github.com/vaseem-06/hiring-app-1.git'
+    }
+
+    stage('Build') {
+        sh "${mvnHome}/bin/mvn clean package -DskipTests"
+    }
+
+    stage('SonarQube Analysis') {
+        withSonarQubeEnv('sonar-scanner') {
+            withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                sh """
+                ${mvnHome}/bin/mvn sonar:sonar \
+                  -Dsonar.projectKey=hiring-app \
+                  -Dsonar.host.url=$SONAR_HOST_URL \
+                  -Dsonar.token=$SONAR_TOKEN
+                """
+            }
+        }
+    }
+
+    stage('Deploy to Nexus') {
+        withCredentials([usernamePassword(credentialsId: 'nexus_server', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+            sh """
+            mkdir -p /var/lib/jenkins/.m2
+            cat > /var/lib/jenkins/.m2/settings.xml <<EOF
+            <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 
+                      https://maven.apache.org/xsd/settings-1.0.0.xsd">
+              <servers>
+                <server>
+                  <id>nexus</id>
+                  <username>${NEXUS_USER}</username>
+                  <password>${NEXUS_PASS}</password>
+                </server>
+              </servers>
+            </settings>
+            EOF
+
+            ${mvnHome}/bin/mvn clean deploy -DskipTests
+            """
+        }
+    }
+
+    stage('Deploy to Tomcat') {
+        withCredentials([usernamePassword(credentialsId: 'tomcat_credentials', usernameVariable: 'TOMCAT_USER', passwordVariable: 'TOMCAT_PASS')]) {
+            sh '''
+            # First undeploy the old app
+            curl -u $TOMCAT_USER:$TOMCAT_PASS "http://184.72.196.111:8080/manager/text/undeploy?path=/hiring"
+
+            # Now deploy the new WAR
+            curl -u $TOMCAT_USER:$TOMCAT_PASS \
+                 -T target/hiring.war \
+                 "http://184.72.196.111:8080/manager/text/deploy?path=/hiring&update=true"
+            '''
+        }
+    }
+
+    stage('Slack Notification') {
+        slackSend(
+            channel: '#jenkins-integration',
+            color: 'good',
+            message: "Hi Team, Jenkins Scripted pipeline job for *hiring-app* has finished successfully! ✅\nDeployed by: Vaseem Mohammed"
+        )
+    }
+}
